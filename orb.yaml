@@ -1,0 +1,133 @@
+version: 2.1
+description: |
+  Golang CI jobs and commands.
+
+executors:
+  golang:
+    docker:
+    - image: golang:<< parameters.tag >>
+    parameters:
+      tag:
+        default: 1.12-alpine
+        description: |
+          Image tag for golang docker image.
+          https://hub.docker.com/_/golang?tab=tags
+        type: string
+
+
+commands:
+
+  mod-download:
+    description: |
+      Restore and update /go/pkg/mod cache
+    parameters:
+      prefix:
+        type: string
+        default: v1
+    steps:
+      - restore_cache:
+          name: Restore go module cache
+          keys:
+            - '<< parameters.prefix >>-go-modules'
+            - '<< parameters.prefix >>-go-modules-{{ checksum "gs.'
+      - run:
+          command: go mod download
+      - save_cache:
+          name: Save go module cache
+          key: '<< parameters.prefix >>-go-modules-{{ checksum "go.sum" }}'
+          paths: [/go/pkg/mod]
+
+jobs:
+
+  godoc:
+    description: |
+      Render static godoc and upload it to a remote branch. Defaults to
+      uploading to the gh-pages branch for using github pages.
+    parameters:
+      executor:
+        type: executor
+        default: golang
+      package:
+        type: string
+        description: |
+          Import path to a go package in the GOPATH to render with godoc.
+      target-branch:
+        type: string
+        default: gh-pages
+        description: |
+          Git branch which contains the static godoc. Set to the empty string
+          to disable publishing to a branch.
+    executor: << parameters.executor >>
+    steps:
+      - run:
+          name: "Install godoc"
+          command: |
+            command -v apk && apk add --no-cache --no-progress wget
+            command -v git || (
+              command -v apk && apk add --no-cache --no-progress git
+            )
+            command -v ssh || (
+              command -v apk && apk add --no-cache --no-progress openssh
+            )
+            command -v godoc || (
+              go get golang.org/x/tools/cmd/godoc
+            )
+      - checkout
+      - mod-download
+      - run:
+          name: Setup GOPATH and vendor
+          command: |
+            target="$GODOC/go/src/<< parameters.package >>"
+            mkdir -p "$(dirname "$target")"
+            ln -s "$PWD" "$target"
+            go mod vendor
+            
+      - run:
+          name: Run godoc
+          background: true
+          command: |
+            cd "$GODOC/go/src/<< parameters.package >>"
+            godoc -http=:6060
+      - run:
+          name: Crawl godoc
+          command: |
+            mkdir -p godoc; cd godoc
+            # TODO: where is the robots.txt coming from?
+            timeout -t 60 wget \
+              --recursive \
+              --no-parent \
+              --timestamping \
+              --adjust-extension \
+              --page-requisites \
+              --convert-links \
+              --no-verbose \
+              -e robots=off \
+              http://localhost:6060/pkg/<< parameters.package >>
+      - run:
+          name: Publish to remote git branch << parameters.target-branch >>
+          command: |
+            if [[ -z "<< parameters.target-branch >>" ]]; then
+              echo "No target-branch set"
+              exit
+            fi
+
+            git config --global user.email "bot@example.com"
+            git config --global user.name  "CircleCI godoc bot"
+
+            git reset --hard HEAD
+
+            if git checkout gh-pages; then
+              git add godoc/localhost:6060/*
+              git mv -f godoc/localhost:6060/* .
+            else
+              # Create a new gh-pages branch
+              cd godoc/localhost:6060/
+              git init
+              git commit --allow-empty -m "init"
+              git remote add origin $CIRCLE_REPOSITORY_URL
+              git checkout -b gh-pages
+              git add *
+            fi
+
+            git commit -a -m "Update to docs."
+            git push origin gh-pages
