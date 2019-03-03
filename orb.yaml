@@ -1,6 +1,8 @@
 version: 2.1
 description: |
-  Golang CI jobs and commands.
+  Golang CI jobs and commands for CircleCI.
+
+  Source: https://github.com/dnephin/golang-orb
 
 orbs:
   codecov: codecov/codecov@1.0.4
