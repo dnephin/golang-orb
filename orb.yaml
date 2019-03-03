@@ -2,17 +2,42 @@ version: 2.1
 description: |
   Golang CI jobs and commands.
 
+orbs:
+  codecov: codecov/codecov@1.0.4
+
 executors:
   golang:
     docker:
     - image: golang:<< parameters.tag >>
+    environment:
+      CGO_ENABLED: << parameters.cgo-enabled >>
     parameters:
       tag:
+        type: string
         default: 1.12-alpine
         description: |
           Image tag for golang docker image.
           https://hub.docker.com/_/golang?tab=tags
+      cgo-enabled:
         type: string
+        default: '0'
+        description: Value for CGO_ENABLED
+  circleci-golang:
+    docker:
+    - image: circleci/golang:<< parameters.tag >>
+    environment:
+      CGO_ENABLED: << parameters.cgo-enabled >>
+    parameters:
+      tag:
+        type: string
+        default: '1.12'
+        description: |
+          Image tag for circleci/golang docker image.
+          https://hub.docker.com/r/circleci/golang/tags
+      cgo-enabled:
+        type: string
+        default: '1'
+        description: Value for CGO_ENABLED
 
 
 commands:
@@ -31,13 +56,96 @@ commands:
             - '<< parameters.prefix >>-go-modules'
             - '<< parameters.prefix >>-go-modules-{{ checksum "gs.'
       - run:
+          environment:
+            GO111MODULE: 'on'
           command: go mod download
       - save_cache:
           name: Save go module cache
           key: '<< parameters.prefix >>-go-modules-{{ checksum "go.sum" }}'
           paths: [/go/pkg/mod]
 
+  install-gotestsum:
+    description: Install gotestsum
+    parameters:
+      version:
+        type: string
+        default: 0.3.3
+    steps:
+      - restore_cache:
+          name: Restore gotestsum cache
+          keys: [v1-gotestsum-<< parameters.version >>]
+      - run:
+          name: Install gotestsum
+          command: |
+            command -v /go/bin/gotestsum && exit
+            command -v curl || (
+              command -v apk && apk add --no-cache --no-progress curl
+            )
+
+            download=https://github.com/gotestyourself/gotestsum/releases/download
+            curl -sSL $download/v<< parameters.version >>/gotestsum_<< parameters.version >>_linux_amd64.tar.gz | \
+              tar -xz -C /go/bin gotestsum
+      - save_cache:
+          name: Save gotestsum cache
+          key: v1-gotestsum-<< parameters.version >>
+          paths: [/go/bin/gotestsum]
+
 jobs:
+
+  test:
+    description: |
+      Run tests with gotestsum.
+    parameters:
+      executor:
+        type: executor
+        default: golang
+      go-test-flags:
+        type: string
+        default: ""
+        description: Flags passed to go test.
+      packages:
+        type: string
+        default: "./..."
+        description: Paths to the list of packages to test.
+      test-suite-name:
+        type: string
+        default: unit
+        description: Test suite name to report to CircleCI.
+      gotestsum-format:
+        type: string
+        default: short
+      coverage:
+        type: string
+        default: -coverprofile=coverage.txt
+        description: Coverage flag. Set to the empty string to disable.
+      codecov-upload:
+        type: boolean
+        default: false
+        description: |
+          Upload coverage report to https://codecov.io/. Requires the codecov API token to be
+          set as an environment variable for private projects.
+    executor: << parameters.executor >>
+    steps:
+      - checkout
+      - mod-download
+      - install-gotestsum
+      - run:
+          name: go test
+          environment:
+            GOTESTSUM_JUNITFILE: /tmp/test-reports/<< parameters.test-suite-name >>/junit.xml
+            GOTESTSUM_FORMAT: << parameters.gotestsum-format >>
+          command: |
+            mkdir -p /tmp/test-reports/<< parameters.test-suite-name >>
+            gotestsum -- \
+              << parameters.coverage >> \
+              << parameters.go-test-flags >> \
+              << parameters.packages >>
+      - store_test_results:
+          path: /tmp/test-reports
+      - when:
+          condition: << parameters.codecov-upload >>
+          steps: [codecov/upload]
+
 
   godoc:
     description: |
