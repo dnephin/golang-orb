@@ -92,6 +92,29 @@ commands:
           key: v1-gotestsum-<< parameters.version >>
           paths: [/go/bin/gotestsum]
 
+  install-golangci-lint:
+    description: Install golangci-lint
+    parameters:
+      version:
+        type: string
+        default: 1.15.0
+    steps:
+      - restore_cache:
+          name: Restore golangci-lint cache
+          keys: [v1-golangci-lint-<< parameters.version >>]
+      - run:
+          name: Install golangci-lint
+          command: |
+            command -v /go/bin/golangci-lint && exit
+
+            download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
+            wget -O- -q $download | sh -s -- -b /go/bin/ v<< parameters.version >>
+      - save_cache:
+          name: Save golangci-lint cache
+          key: v1-golangci-lint-<< parameters.version >>
+          paths: [/go/bin/golangci-lint]
+
+
 jobs:
 
   test:
@@ -149,6 +172,38 @@ jobs:
           condition: << parameters.codecov-upload >>
           steps: [codecov/upload]
 
+  lint:
+    description: |
+      Run golangci-lint.
+    parameters:
+      executor:
+        type: executor
+        default: golang
+      golangci-lint-version:
+        type: string
+        default: 1.15.0
+      config:
+        type: string
+        default: .golangci.yml
+        description: Path to the golangci-lint config file.
+      concurrency:
+        type: string
+        default: '2'
+        description: |
+          Concurrency used to run linters. Defaults to 2 because NumCPU is not
+          aware of container CPU limits.
+    executor: << parameters.executor >>
+    steps:
+      - checkout
+      - mod-download
+      - install-golangci-lint:
+          version: << parameters.golangci-lint-version >>
+      - run:
+          name: Lint
+          command: |
+            golangci-lint run \
+              --concurrency << parameters.concurrency >> \
+              --config << parameters.config >>
 
   godoc:
     description: |
