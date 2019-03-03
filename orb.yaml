@@ -108,7 +108,7 @@ jobs:
       packages:
         type: string
         default: "./..."
-        description: Paths to the list of packages to test.
+        description: Import paths of packages to be tested.
       test-suite-name:
         type: string
         default: unit
@@ -116,6 +116,7 @@ jobs:
       gotestsum-format:
         type: string
         default: short
+        description: gotestsum format. https://github.com/gotestyourself/gotestsum#format
       coverage:
         type: string
         default: -coverprofile=coverage.txt
