@@ -4,8 +4,6 @@ description: |
 
   Source: https://github.com/dnephin/golang-orb
 
-orbs:
-  codecov: codecov/codecov@1.0.4
 
 executors:
   golang:
@@ -51,6 +49,34 @@ commands:
             command -v git || (
               command -v apk && apk add --no-cache --no-progress git
             )
+
+  install-ssh:
+    steps:
+      - run:
+          name: "Install ssh"
+          command: |
+            command -v ssh || (
+              command -v apk && apk add --no-cache --no-progress openssh
+            )
+
+  install-bash:
+    steps:
+      - run:
+          name: "Install bash"
+          command: |
+            command -v bash || (
+              command -v apk && apk add --no-cache --no-progress bash
+            )
+
+  install-curl:
+    steps:
+      - run:
+          name: "Install curl"
+          command: |
+            command -v curl || (
+              command -v apk && apk add --no-cache --no-progress curl
+            )
+
 
   mod-download:
     description: |
@@ -161,6 +187,8 @@ jobs:
           set as an environment variable for private projects.
     executor: << parameters.executor >>
     steps:
+      - install-git
+      - install-ssh
       - checkout
       - mod-download
       - install-gotestsum
@@ -179,7 +207,13 @@ jobs:
           path: /tmp/test-reports
       - when:
           condition: << parameters.codecov-upload >>
-          steps: [codecov/upload]
+          steps:
+            - install-bash
+            - install-curl
+            - run:
+                shell: /bin/bash -eo pipefail
+                command: |
+                  bash <(curl -s https://codecov.io/bash)
 
   lint:
     description: |
