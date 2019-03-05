@@ -43,6 +43,14 @@ executors:
 
 
 commands:
+  install-git:
+    steps:
+      - run:
+          name: "Install git"
+          command: |
+            command -v git || (
+              command -v apk && apk add --no-cache --no-progress git
+            )
 
   mod-download:
     description: |
@@ -52,6 +60,7 @@ commands:
         type: string
         default: v1
     steps:
+      - install-git
       - restore_cache:
           name: Restore go module cache
           keys:
