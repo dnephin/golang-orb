@@ -56,7 +56,7 @@ commands:
           name: Restore go module cache
           keys:
             - '<< parameters.prefix >>-go-modules'
-            - '<< parameters.prefix >>-go-modules-{{ checksum "gs.'
+            - '<< parameters.prefix >>-go-modules-{{ checksum "go.sum" }}'
       - run:
           environment:
             GO111MODULE: 'on'
@@ -247,7 +247,7 @@ jobs:
             mkdir -p "$(dirname "$target")"
             ln -s "$PWD" "$target"
             go mod vendor
-            
+
       - run:
           name: Run godoc
           background: true
