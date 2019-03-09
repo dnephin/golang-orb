@@ -101,6 +101,20 @@ commands:
           key: '<< parameters.prefix >>-go-modules-{{ checksum "go.sum" }}'
           paths: [/go/pkg/mod]
 
+  mod-tidy-check:
+    description: |
+      Run 'go mod tidy' and check that go.mod and go.sum remain unmodified.
+      Use this command to ensure that the go module files that are commited
+      are correct and tidy.
+    steps:
+      - install-git
+      - run: go mod tidy -v
+      - run:
+          name: Check git diff
+          command: |
+            git diff go.mod go.sum
+            git diff --quiet go.mod go.sum
+
   install-gotestsum:
     description: Install gotestsum
     parameters:
