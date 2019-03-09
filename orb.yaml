@@ -121,6 +121,9 @@ commands:
       version:
         type: string
         default: 0.3.3
+      gobin:
+        type: string
+        default: /go/bin
     steps:
       - restore_cache:
           name: Restore gotestsum cache
@@ -128,18 +131,19 @@ commands:
       - run:
           name: Install gotestsum
           command: |
-            command -v /go/bin/gotestsum && exit
+            mkdir -p << parameters.gobin >>
+            command -v << parameters.gobin >>/gotestsum && exit
             command -v curl || (
               command -v apk && apk add --no-cache --no-progress curl
             )
 
             download=https://github.com/gotestyourself/gotestsum/releases/download
             curl -sSL $download/v<< parameters.version >>/gotestsum_<< parameters.version >>_linux_amd64.tar.gz | \
-              tar -xz -C /go/bin gotestsum
+              tar -xz -C << parameters.gobin >> gotestsum
       - save_cache:
           name: Save gotestsum cache
           key: v1-gotestsum-<< parameters.version >>
-          paths: [/go/bin/gotestsum]
+          paths: [<< parameters.gobin >>/gotestsum]
 
   install-golangci-lint:
     description: Install golangci-lint
@@ -147,6 +151,9 @@ commands:
       version:
         type: string
         default: 1.15.0
+      gobin:
+        type: string
+        default: /go/bin
     steps:
       - restore_cache:
           name: Restore golangci-lint cache
@@ -154,14 +161,15 @@ commands:
       - run:
           name: Install golangci-lint
           command: |
-            command -v /go/bin/golangci-lint && exit
+            mkdir -p << parameters.gobin >>
+            command -v << parameters.gobin >>/golangci-lint && exit
 
             download=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
-            wget -O- -q $download | sh -s -- -b /go/bin/ v<< parameters.version >>
+            wget -O- -q $download | sh -s -- -b << parameters.gobin >>/ v<< parameters.version >>
       - save_cache:
           name: Save golangci-lint cache
           key: v1-golangci-lint-<< parameters.version >>
-          paths: [/go/bin/golangci-lint]
+          paths: [<< parameters.gobin >>/golangci-lint]
 
 
 jobs:
