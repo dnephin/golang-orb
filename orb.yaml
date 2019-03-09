@@ -112,8 +112,8 @@ commands:
       - run:
           name: Check git diff
           command: |
-            git diff go.mod go.sum
-            git diff --quiet go.mod go.sum
+            git --no-pager diff go.mod go.sum
+            git --no-pager diff --quiet go.mod go.sum
 
   install-gotestsum:
     description: Install gotestsum
