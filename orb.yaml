@@ -90,7 +90,7 @@ commands:
       - restore_cache:
           name: Restore go module cache
           keys:
-            - '<< parameters.prefix >>-go-modules'
+            - '<< parameters.prefix >>-go-modules-'
             - '<< parameters.prefix >>-go-modules-{{ checksum "go.sum" }}'
       - run:
           environment:
