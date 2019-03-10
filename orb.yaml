@@ -247,10 +247,6 @@ jobs:
       golangci-lint-version:
         type: string
         default: 1.15.0
-      config:
-        type: string
-        default: .golangci.yml
-        description: Path to the golangci-lint config file.
       concurrency:
         type: string
         default: '2'
@@ -266,9 +262,8 @@ jobs:
       - run:
           name: Lint
           command: |
-            golangci-lint run \
-              --concurrency << parameters.concurrency >> \
-              --config << parameters.config >>
+            golangci-lint run -v \
+              --concurrency << parameters.concurrency >>
 
   godoc:
     description: |
