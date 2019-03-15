@@ -41,41 +41,25 @@ executors:
 
 
 commands:
-  install-git:
-    steps:
-      - run:
-          name: "Install git"
-          command: |
-            command -v git || (
-              command -v apk && apk add --no-cache --no-progress git
-            )
-
   install-ssh:
     steps:
       - run:
           name: "Install ssh"
           command: |
-            command -v ssh || (
-              command -v apk && apk add --no-cache --no-progress openssh
-            )
+            command -v ssh && exit
+            command -v apk && apk add --no-cache --no-progress openssh
 
-  install-bash:
+  install:
+    description: Install a package
+    parameters:
+      package:
+        type: string
     steps:
       - run:
-          name: "Install bash"
+          name: "Install << parameters.package >>"
           command: |
-            command -v bash || (
-              command -v apk && apk add --no-cache --no-progress bash
-            )
-
-  install-curl:
-    steps:
-      - run:
-          name: "Install curl"
-          command: |
-            command -v curl || (
-              command -v apk && apk add --no-cache --no-progress curl
-            )
+            command -v << parameters.package >> && exit
+            command -v apk && apk add --no-cache --no-progress << parameters.package >>
 
 
   mod-download:
@@ -87,7 +71,7 @@ commands:
         default: v1
         description: Prefix for cache key to store /go/pkg/mod.
     steps:
-      - install-git
+      - install: {package: git}
       - restore_cache:
           name: Restore go module cache
           keys:
@@ -108,7 +92,7 @@ commands:
       Use this command to ensure that the go module files that are commited
       are correct and tidy.
     steps:
-      - install-git
+      - install: {package: git}
       - run: go mod tidy -v
       - run:
           name: Check git diff
@@ -218,7 +202,7 @@ jobs:
           set as an environment variable for private projects.
     executor: << parameters.executor >>
     steps:
-      - install-git
+      - install: {package: git}
       - install-ssh
       - checkout
       - mod-download
@@ -239,8 +223,8 @@ jobs:
       - when:
           condition: << parameters.codecov-upload >>
           steps:
-            - install-bash
-            - install-curl
+            - install: {package: bash}
+            - install: {package: curl}
             - run:
                 shell: /bin/bash -eo pipefail
                 command: |
