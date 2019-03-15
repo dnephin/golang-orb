@@ -85,6 +85,7 @@ commands:
       prefix:
         type: string
         default: v1
+        description: Prefix for cache key to store /go/pkg/mod.
     steps:
       - install-git
       - restore_cache:
@@ -124,10 +125,14 @@ commands:
       gobin:
         type: string
         default: /go/bin
+      prefix:
+        type: string
+        default: v1
+        description: Prefix for cache key to store /go/pkg/mod.
     steps:
       - restore_cache:
           name: Restore gotestsum cache
-          keys: [v1-gotestsum-<< parameters.version >>]
+          keys: [<< parameters.prefix >>-gotestsum-<< parameters.version >>]
       - run:
           name: Install gotestsum
           command: |
@@ -142,7 +147,7 @@ commands:
               tar -xz -C << parameters.gobin >> gotestsum
       - save_cache:
           name: Save gotestsum cache
-          key: v1-gotestsum-<< parameters.version >>
+          key: << parameters.prefix >>-gotestsum-<< parameters.version >>
           paths: [<< parameters.gobin >>/gotestsum]
 
   install-golangci-lint:
