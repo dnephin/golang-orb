@@ -91,15 +91,15 @@ commands:
       - restore_cache:
           name: Restore go module cache
           keys:
-            - '<< parameters.prefix >>-go-modules-'
-            - '<< parameters.prefix >>-go-modules-{{ checksum "go.sum" }}'
+            - '<< parameters.prefix >>-{{ arch }}-go-modules-'
+            - '<< parameters.prefix >>-{{ arch }}-go-modules-{{ checksum "go.sum" }}'
       - run:
           environment:
             GO111MODULE: 'on'
           command: go mod download
       - save_cache:
           name: Save go module cache
-          key: '<< parameters.prefix >>-go-modules-{{ checksum "go.sum" }}'
+          key: '<< parameters.prefix >>-{{ arch }}-go-modules-{{ checksum "go.sum" }}'
           paths: [/go/pkg/mod]
 
   mod-tidy-check:
@@ -128,11 +128,11 @@ commands:
       prefix:
         type: string
         default: v1
-        description: Prefix for cache key to store /go/pkg/mod.
+        description: Prefix for cache key to store the binary.
     steps:
       - restore_cache:
           name: Restore gotestsum cache
-          keys: [<< parameters.prefix >>-gotestsum-<< parameters.version >>]
+          keys: ['<< parameters.prefix >>-gotestsum-{{ arch }}-<< parameters.version >>']
       - run:
           name: Install gotestsum
           command: |
@@ -147,7 +147,7 @@ commands:
               tar -xz -C << parameters.gobin >> gotestsum
       - save_cache:
           name: Save gotestsum cache
-          key: << parameters.prefix >>-gotestsum-<< parameters.version >>
+          key: '<< parameters.prefix >>-gotestsum-{{ arch }}-<< parameters.version >>'
           paths: [<< parameters.gobin >>/gotestsum]
 
   install-golangci-lint:
@@ -159,10 +159,14 @@ commands:
       gobin:
         type: string
         default: /go/bin
+      prefix:
+        type: string
+        default: v1
+        description: Prefix for cache key to store the binary.
     steps:
       - restore_cache:
           name: Restore golangci-lint cache
-          keys: [v1-golangci-lint-<< parameters.version >>]
+          keys: ['<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>']
       - run:
           name: Install golangci-lint
           command: |
@@ -173,7 +177,7 @@ commands:
             wget -O- -q $download | sh -s -- -b << parameters.gobin >>/ v<< parameters.version >>
       - save_cache:
           name: Save golangci-lint cache
-          key: v1-golangci-lint-<< parameters.version >>
+          key: '<< parameters.prefix >>-golangci-lint-{{ arch }}-<< parameters.version >>'
           paths: [<< parameters.gobin >>/golangci-lint]
 
 
