@@ -64,12 +64,16 @@ commands:
 
   mod-download:
     description: |
-      Restore and update /go/pkg/mod cache
+      Restore and update the Go module cache.
     parameters:
       prefix:
         type: string
         default: v1
-        description: Prefix for cache key to store /go/pkg/mod.
+        description: Prefix for the cache key.
+      path:
+        type: string
+        default: /go/pkg/mod
+        description: Path to the go module directory to store in the cache.
     steps:
       - install: {package: git}
       - restore_cache:
@@ -84,7 +88,7 @@ commands:
       - save_cache:
           name: Save go module cache
           key: '<< parameters.prefix >>-{{ arch }}-go-modules-{{ checksum "go.sum" }}'
-          paths: [/go/pkg/mod]
+          paths: ['<< parameters.path >>']
 
   mod-tidy-check:
     description: |
