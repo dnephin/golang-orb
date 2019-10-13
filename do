@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# ./make - a .PHONY makefile is worse than a bash script.
+# ./do - a .PHONY makefile is worse than a bash script.
 #
 set -eu -o pipefail
 
