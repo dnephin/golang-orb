@@ -124,13 +124,21 @@ commands:
       - run:
           name: Install gotestsum
           command: |
+            download=https://github.com/gotestyourself/gotestsum/releases/download
             mkdir -p << parameters.gobin >>
             command -v << parameters.gobin >>/gotestsum && exit
+
+            if command -v choco; then
+              curl -sSL $download/v<< parameters.version >>/gotestsum_<< parameters.version >>_windows_amd64.tar.gz | \
+                7z e -si -tgzip -so | \
+                7z e -si -ttar -o<< parameters.gobin >> gotestsum.exe
+              exit 0
+            fi
+
             command -v curl || (
               command -v apk && apk add --no-cache --no-progress curl
             )
 
-            download=https://github.com/gotestyourself/gotestsum/releases/download
             curl -sSL $download/v<< parameters.version >>/gotestsum_<< parameters.version >>_linux_amd64.tar.gz | \
               tar -xz -C << parameters.gobin >> gotestsum
       - save_cache:
@@ -218,7 +226,7 @@ jobs:
             GOTESTSUM_FORMAT: << parameters.gotestsum-format >>
           command: |
             mkdir -p /tmp/test-reports/<< parameters.test-suite-name >>
-            gotestsum -- \
+            /go/bin/gotestsum -- \
               << parameters.coverage >> \
               << parameters.go-test-flags >> \
               << parameters.packages >>
