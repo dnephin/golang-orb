@@ -79,8 +79,8 @@ commands:
       - restore_cache:
           name: Restore go module cache
           keys:
-            - '<< parameters.prefix >>-{{ arch }}-go-modules-'
             - '<< parameters.prefix >>-{{ arch }}-go-modules-{{ checksum "go.sum" }}'
+            - '<< parameters.prefix >>-{{ arch }}-go-modules-'
       - run:
           environment:
             GO111MODULE: 'on'
