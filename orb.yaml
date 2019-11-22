@@ -14,7 +14,7 @@ executors:
     parameters:
       tag:
         type: string
-        default: 1.12-alpine
+        default: 1.13-alpine
         description: |
           Image tag for golang docker image.
           https://hub.docker.com/_/golang?tab=tags
@@ -30,7 +30,7 @@ executors:
     parameters:
       tag:
         type: string
-        default: '1.12'
+        default: '1.13'
         description: |
           Image tag for circleci/golang docker image.
           https://hub.docker.com/r/circleci/golang/tags
@@ -61,34 +61,29 @@ commands:
             command -v << parameters.package >> && exit
             command -v apk && apk add --no-cache --no-progress << parameters.package >>
 
-
   mod-download:
     description: |
-      Restore and update the Go module cache.
+      DEPRECATED: use 'run: go mod download' instead.
+
+      Previously this command would restore and update the Go module cache.
+      After measuring the cache effectiveness it turned out that 'go mod download'
+      is actually faster than the cache in most cache. In go1.13 'go mod download'
+      became even faster due to the use of the package cache.
+
+      This command no longer uses a cache, but remains for backwards compatibility.
     parameters:
       prefix:
         type: string
         default: v1
-        description: Prefix for the cache key.
       path:
         type: string
         default: /go/pkg/mod
-        description: Path to the go module directory to store in the cache.
     steps:
       - install: {package: git}
-      - restore_cache:
-          name: Restore go module cache
-          keys:
-            - '<< parameters.prefix >>-{{ arch }}-go-modules-'
-            - '<< parameters.prefix >>-{{ arch }}-go-modules-{{ checksum "go.sum" }}'
       - run:
           environment:
             GO111MODULE: 'on'
           command: go mod download
-      - save_cache:
-          name: Save go module cache
-          key: '<< parameters.prefix >>-{{ arch }}-go-modules-{{ checksum "go.sum" }}'
-          paths: ['<< parameters.path >>']
 
   mod-tidy-check:
     description: |
@@ -217,7 +212,7 @@ jobs:
       - install: {package: git}
       - install-ssh
       - checkout
-      - mod-download
+      - run: go mod download
       - install-gotestsum
       - run:
           name: go test
@@ -261,7 +256,7 @@ jobs:
     executor: << parameters.executor >>
     steps:
       - checkout
-      - mod-download
+      - run: go mod download
       - install-golangci-lint:
           version: << parameters.golangci-lint-version >>
       - run:
@@ -304,7 +299,7 @@ jobs:
               go get golang.org/x/tools/cmd/godoc
             )
       - checkout
-      - mod-download
+      - run: go mod download
       - run:
           name: Setup GOPATH and vendor
           command: |
