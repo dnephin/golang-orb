@@ -14,7 +14,7 @@ executors:
     parameters:
       tag:
         type: string
-        default: 1.13-alpine
+        default: 1.17-alpine
         description: |
           Image tag for golang docker image.
           https://hub.docker.com/_/golang?tab=tags
@@ -30,7 +30,7 @@ executors:
     parameters:
       tag:
         type: string
-        default: '1.13'
+        default: '1.17'
         description: |
           Image tag for circleci/golang docker image.
           https://hub.docker.com/r/circleci/golang/tags
@@ -104,7 +104,7 @@ commands:
     parameters:
       version:
         type: string
-        default: 0.3.5
+        default: 1.7.0
       gobin:
         type: string
         default: /go/bin
@@ -146,7 +146,7 @@ commands:
     parameters:
       version:
         type: string
-        default: 1.15.0
+        default: 1.42.0
       gobin:
         type: string
         default: /go/bin
@@ -246,7 +246,7 @@ jobs:
         default: golang
       golangci-lint-version:
         type: string
-        default: 1.15.0
+        default: 1.42.0
       concurrency:
         type: string
         default: '2'
